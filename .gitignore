@@ -1,0 +1,23 @@
+
+# FVM Version Cache
+.fvm/
+
+# Dart and Flutter generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# IDE and OS files
+.idea/
+*.iml
+.DS_Store
+*.log
+
+# Keep pubspec.lock for reproducible application dependencies.

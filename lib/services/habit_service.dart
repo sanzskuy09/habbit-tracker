@@ -1,0 +1,10 @@
+import '../models/habit.dart';
+
+/// Kontrak CRUD agar widget tidak bergantung langsung pada Hive.
+abstract interface class HabitService {
+  Future<List<Habit>> getHabits();
+  Future<void> createHabit(Habit habit);
+  Future<void> updateHabit(Habit habit);
+  Future<void> deleteHabit(String id);
+  Future<void> close();
+}

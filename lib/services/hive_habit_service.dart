@@ -1,0 +1,71 @@
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../models/habit.dart';
+import 'habit_service.dart';
+
+class HiveHabitService implements HabitService {
+  HiveHabitService._(this._box);
+
+  static const boxName = 'habits_v1';
+  final Box<Map> _box;
+
+  /// directory hanya diperlukan tes; aplikasi memakai direktori dokumen lokal.
+  static Future<HiveHabitService> open({String? directory}) async {
+    if (directory == null) {
+      await Hive.initFlutter();
+    } else {
+      Hive.init(directory);
+    }
+    final box = await Hive.openBox<Map>(boxName);
+    return HiveHabitService._(box);
+  }
+
+  @override
+  Future<List<Habit>> getHabits() async {
+    final habits = _box.values
+        .map((map) => Habit.fromMap(Map<String, dynamic>.from(map)))
+        .toList();
+    // Habit terbaru tampil dahulu. ID membuat urutan stabil jika waktu sama.
+    habits.sort((a, b) {
+      final byDate = b.createdAt.compareTo(a.createdAt);
+      return byDate == 0 ? a.id.compareTo(b.id) : byDate;
+    });
+    return habits;
+  }
+
+  @override
+  Future<void> createHabit(Habit habit) async {
+    _validate(habit);
+    if (_box.containsKey(habit.id)) {
+      throw StateError('Habit dengan ID ini sudah ada.');
+    }
+    // Tunggu penulisan selesai sebelum UI menganggap penyimpanan berhasil.
+    await _box.put(habit.id, habit.toMap());
+  }
+
+  @override
+  Future<void> updateHabit(Habit habit) async {
+    _validate(habit);
+    final previous = _box.get(habit.id);
+    if (previous == null) throw StateError('Habit tidak ditemukan.');
+    if (previous['createdAt'] != habit.createdAt.toIso8601String()) {
+      throw ArgumentError('Tanggal pembuatan habit tidak boleh berubah.');
+    }
+    await _box.put(habit.id, habit.toMap());
+  }
+
+  @override
+  Future<void> deleteHabit(String id) async {
+    if (!_box.containsKey(id)) throw StateError('Habit tidak ditemukan.');
+    await _box.delete(id);
+  }
+
+  static void _validate(Habit habit) {
+    if (habit.id.trim().isEmpty || habit.title.trim().isEmpty) {
+      throw ArgumentError('ID dan nama habit wajib diisi.');
+    }
+  }
+
+  @override
+  Future<void> close() => _box.close();
+}
