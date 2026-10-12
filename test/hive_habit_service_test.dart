@@ -131,4 +131,55 @@ void main() {
       'older',
     ]);
   });
+
+  test(
+    'Daily logs are idempotent and survive reopening with phase 2 habits',
+    () async {
+      final habit = habitFixture(createdAt: DateTime(2026, 10, 1));
+      await service.createHabit(habit);
+      await service.setCompleted(habit.id, DateTime(2026, 10, 9, 8), true);
+      await service.setCompleted(habit.id, DateTime(2026, 10, 9, 23, 59), true);
+      await reopen();
+      expectHabit((await service.getHabits()).single, habit);
+      final log = (await service.getLogs()).single;
+      expect(log.habitId, habit.id);
+      expect(log.completedAt, DateTime(2026, 10, 9));
+      await service.setCompleted(habit.id, DateTime(2026, 10, 9), false);
+      await reopen();
+      expect(await service.getLogs(), isEmpty);
+      expect(await service.getHabits(), hasLength(1));
+    },
+  );
+
+  test(
+    'Deleting a habit cascades logs while preserving other history',
+    () async {
+      await service.createHabit(habitFixture());
+      await service.createHabit(habitFixture(id: 'water'));
+      await service.setCompleted('read', DateTime(2026, 10, 9), true);
+      await service.setCompleted('water', DateTime(2026, 10, 9), true);
+      await service.deleteHabit('read');
+      await reopen();
+      expect((await service.getHabits()).single.id, 'water');
+      expect((await service.getLogs()).single.habitId, 'water');
+    },
+  );
+
+  test('Logs reject nonexistent, pre-creation and unscheduled dates', () async {
+    await service.createHabit(habitFixture());
+    await expectLater(
+      service.setCompleted('missing', DateTime(2026, 10, 9), true),
+      throwsStateError,
+    );
+    await expectLater(
+      service.setCompleted('read', DateTime(2026, 10, 8), true),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.setCompleted('read', DateTime(2026, 10, 10), true),
+      throwsArgumentError,
+    );
+    await reopen();
+    expect(await service.getLogs(), isEmpty);
+  });
 }

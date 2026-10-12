@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:provider/provider.dart';
 
 import '../models/habit.dart';
-import '../services/habit_service.dart';
+import '../controllers/habit_controller.dart';
 import 'widgets/habit_appearance.dart';
 import 'widgets/habit_card.dart';
 
 class AddHabitView extends StatefulWidget {
-  const AddHabitView({super.key, required this.habitService, this.habit});
+  const AddHabitView({super.key, this.habit});
 
-  final HabitService habitService;
   final Habit? habit;
 
   @override
@@ -36,7 +36,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     super.initState();
     final habit = widget.habit;
     _habitId = habit?.id ?? const Uuid().v4();
-    _createdAt = habit?.createdAt ?? DateTime.now();
+    _createdAt = habit?.createdAt ?? context.read<HabitController>().now;
     if (habit == null) return;
     _titleController.text = habit.title;
     _descriptionController.text = habit.description;
@@ -79,9 +79,9 @@ class _AddHabitViewState extends State<AddHabitView> {
     setState(() => _saving = true);
     try {
       if (_isEditing) {
-        await widget.habitService.updateHabit(habit);
+        await context.read<HabitController>().updateHabit(habit);
       } else {
-        await widget.habitService.createHabit(habit);
+        await context.read<HabitController>().createHabit(habit);
       }
       if (!mounted) return;
       // PopScope dibuka kembali setelah penulisan berhasil.
@@ -295,7 +295,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                       HabitCard(habit: preview),
                       const SizedBox(height: 16),
                       const Text(
-                        'Habit disimpan di perangkat ini. Jam pengingat dicatat; notifikasi belum diaktifkan.',
+                        'Habit disimpan di perangkat ini. Pengingat mengikuti frekuensi dan zona waktu perangkat. Izinkan notifikasi saat menyimpan. Di Android, pengingat dapat terlambat saat mode hemat daya.',
                       ),
                       const SizedBox(height: 12),
                     ],

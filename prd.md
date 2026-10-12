@@ -107,14 +107,20 @@ class HabitLog {
   * [x] Pasang package `hive` dan `hive_flutter`.
   * [x] Buat CRUD Service untuk menyimpan, membaca, mengedit, dan menghapus kebiasaan.
   * [x] Hubungkan Dashboard serta form tambah/edit ke penyimpanan lokal; hapus melalui menu kartu dengan konfirmasi.
-  * Persistensi habit diuji dengan menutup dan membuka ulang database. Riwayat centang serta streak masih mengikuti phase 3.
-* [ ] **Phase 3: State Management & Logic Streak**
-  * Sambungkan UI dengan State Management (`Riverpod` / `Provider`).
-  * Buat fungsi perhitungan *streak* (hari berurutan) dan logika tanggal harian.
-* [ ] **Phase 4: Local Notifications & Polish UI**
-  * Setup `flutter_local_notifications` untuk memunculkan pengingat di jam yang ditentukan.
-  * Tambahkan animasi (*Lottie* / *Implicit Animations*) saat habit dicentang.
-  * Integrasikan `fl_chart` untuk halaman statistik.
+  * Persistensi habit diuji dengan menutup dan membuka ulang database. Riwayat centang ditambahkan pada phase 3.
+* [x] **Phase 3: State Management & Logic Streak**
+  * [x] Sambungkan UI dengan `Provider` dan `HabitController` (`ChangeNotifier`).
+  * [x] Buat fungsi perhitungan streak dan logika tanggal harian, mengikuti frekuensi habit.
+  * [x] Simpan/batalkan centang harian ke Hive, satu catatan per habit/tanggal.
+  * [x] Tampilkan progres hari ini, streak, dan kalender riwayat bulanan.
+  * [x] Perbarui tanggal saat tengah malam atau aplikasi kembali aktif.
+  * Aturan streak dan flow Provider dijelaskan di [README.md](README.md). Hari di luar jadwal tidak memutus streak; hari ini yang belum selesai tetap memberi kesempatan sampai hari berakhir.
+* [x] **Phase 4: Local Notifications & Polish UI**
+  * [x] Setup `flutter_local_notifications`, zona waktu perangkat, izin Android/iOS, dan jadwal sesuai frekuensi habit.
+  * [x] Sinkronkan jadwal saat startup, edit/hapus, tengah malam, dan resume; kegagalan pengingat tidak membatalkan penyimpanan habit.
+  * [x] Tambahkan implicit animations (`AnimatedContainer` / `AnimatedSwitcher`) saat habit dicentang, mengikuti pengaturan pengurangan animasi.
+  * [x] Integrasikan `fl_chart` untuk statistik 7/30 hari terakhir dengan ringkasan dan rincian teks dari log asli.
+  * Panduan flow tersedia di [README.md](README.md). Android memakai alarm inexact yang dapat terlambat; batas 64 slot jadwal diterapkan. Kemunculan notifikasi di perangkat tetap perlu diuji pada Definition of Done berikut.
 
 ---
 

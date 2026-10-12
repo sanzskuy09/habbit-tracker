@@ -1,7 +1,10 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/habit.dart';
+import '../models/habit_log.dart';
+import '../utils/habit_date.dart';
 import 'habit_service.dart';
+import 'habit_streak.dart';
 
 class HiveHabitService implements HabitService {
   HiveHabitService._(this._box);
@@ -23,6 +26,7 @@ class HiveHabitService implements HabitService {
   @override
   Future<List<Habit>> getHabits() async {
     final habits = _box.values
+        .where((map) => map['recordType'] != 'habit_log')
         .map((map) => Habit.fromMap(Map<String, dynamic>.from(map)))
         .toList();
     // Habit terbaru tampil dahulu. ID membuat urutan stabil jika waktu sama.
@@ -57,7 +61,50 @@ class HiveHabitService implements HabitService {
   @override
   Future<void> deleteHabit(String id) async {
     if (!_box.containsKey(id)) throw StateError('Habit tidak ditemukan.');
-    await _box.delete(id);
+    final logKeys = _box
+        .toMap()
+        .entries
+        .where(
+          (entry) =>
+              entry.value['recordType'] == 'habit_log' &&
+              entry.value['habitId'] == id,
+        )
+        .map((entry) => entry.key);
+    // Satu batch dalam box yang sama menghapus habit beserta riwayatnya.
+    await _box.deleteAll([id, ...logKeys]);
+  }
+
+  @override
+  Future<List<HabitLog>> getLogs() async => _box.values
+      .where((map) => map['recordType'] == 'habit_log')
+      .map((map) => HabitLog.fromMap(Map<String, dynamic>.from(map)))
+      .where((log) => _box.containsKey(log.habitId))
+      .toList();
+
+  @override
+  Future<void> setCompleted(
+    String habitId,
+    DateTime date,
+    bool completed,
+  ) async {
+    final map = _box.get(habitId);
+    if (map == null || map['recordType'] == 'habit_log') {
+      throw StateError('Habit tidak ditemukan.');
+    }
+    final habit = Habit.fromMap(Map<String, dynamic>.from(map));
+    final day = HabitDate.day(date);
+    // Pembatalan tetap diperbolehkan untuk log lama sesudah frekuensi diedit.
+    if (completed && !HabitStreak.isScheduled(habit, day)) {
+      throw ArgumentError('Habit tidak dijadwalkan pada tanggal ini.');
+    }
+    final id = '$habitId:${HabitDate.key(day)}';
+    final key = 'log:$id';
+    if (completed) {
+      final log = HabitLog(id: id, habitId: habitId, completedAt: day);
+      await _box.put(key, log.toMap());
+    } else {
+      await _box.delete(key);
+    }
   }
 
   static void _validate(Habit habit) {
